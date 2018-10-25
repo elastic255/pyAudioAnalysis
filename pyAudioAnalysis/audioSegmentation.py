@@ -953,6 +953,8 @@ def speakerDiarization(filename, n_speakers, mt_size=2.0, mt_step=0.2,
         [seg_start, seg_end, seg_labs] = readSegmentGT(gt_file)
         flags_gt, class_names_gt = segs2flags(seg_start, seg_end, seg_labs, mt_step)
 
+    plot_res = False
+    time_stamps = numpy.array(range(len(cls)))*mt_step+mt_step/2.0
     if plot_res:
         fig = plt.figure()    
         if n_speakers > 0:
@@ -985,8 +987,23 @@ def speakerDiarization(filename, n_speakers, mt_size=2.0, mt_step=0.2,
             plt.xlabel("number of clusters");
             plt.ylabel("average clustering's sillouette");
         plt.show()
-    return cls
+
+    import subprocess
+    for i in range(time_stamps.size-1):
+        init = convertTimeStamp(time_stamps[i])
+        print(init)
+        end = convertTimeStamp(time_stamps[i+1])
+        print(end)
+        subprocess.run(['ffmpeg', '-i', filename, '-ss', init, '-to', end, '-y', 'output/'+filename+str(cls[i])+'-'+str(init)+'.mp3'])
+    endTime = convertTimeStamp(time_stamps[-1])
+    subprocess.run(['ffmpeg', '-i', filename, '-ss', endTime, '-y', 'output/'+filename+str(cls[-1])+'-'+endTime+'.mp3'])
     
+    return cls
+
+def convertTimeStamp(timeStamp):
+    import datetime
+    return str(datetime.timedelta(seconds=timeStamp))
+
 def speakerDiarizationEvaluateScript(folder_name, ldas):
     '''
         This function prints the cluster purity and speaker purity for

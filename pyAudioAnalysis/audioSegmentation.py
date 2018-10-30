@@ -750,7 +750,7 @@ def speakerDiarization(filename, n_speakers, mt_size=2.0, mt_step=0.2,
         - lda_dim (opt)     LDA dimension (0 for no LDA)
         - plot_res     (opt)   0 for not plotting the results 1 for plottingy
     '''
-    [fs, x] = audioBasicIO.readAudioFile(filename)
+    [fs, x, audio_file] = audioBasicIO.readAudioFile(filename)
     x = audioBasicIO.stereo2mono(x)
     duration = len(x) / fs
 
@@ -988,16 +988,18 @@ def speakerDiarization(filename, n_speakers, mt_size=2.0, mt_step=0.2,
             plt.ylabel("average clustering's sillouette");
         plt.show()
 
-    import subprocess
-    for i in range(time_stamps.size-1):
-        init = convertTimeStamp(time_stamps[i])
-        print(init)
-        end = convertTimeStamp(time_stamps[i+1])
-        print(end)
-        subprocess.run(['ffmpeg', '-i', filename, '-ss', init, '-to', end, '-y', 'output/'+filename+str(cls[i])+'-'+str(init)+'.mp3'])
-    endTime = convertTimeStamp(time_stamps[-1])
-    subprocess.run(['ffmpeg', '-i', filename, '-ss', endTime, '-y', 'output/'+filename+str(cls[-1])+'-'+endTime+'.mp3'])
-    
+    from itertools import groupby
+    i = 0
+    base_output_filename = filename.split('/')[-1]
+    for speaker, group in groupby(cls):
+        groupList = list(group)
+        init = int(time_stamps[i]*1000)
+        i = i + len(groupList)
+        end = int(time_stamps[i]*1000) if i < len(cls) else len(audio_file)
+        segment = audio_file[init:end]
+        segment.export(base_output_filename + '-speaker' + str(int(speaker)) + '-time-' + str(init) + '-' + str(end) + '.wav', format='wav')
+        print(speaker, init, end)
+
     return cls
 
 def convertTimeStamp(timeStamp):

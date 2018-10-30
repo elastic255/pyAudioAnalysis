@@ -109,7 +109,7 @@ def readAudioFile(path):
         if x.shape[1]==1:
             x = x.flatten()
 
-    return (Fs, x)
+    return (Fs, x, audiofile)
 
 def stereo2mono(x):
     '''
